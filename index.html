@@ -1,0 +1,1903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bike Showroom</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- GSAP Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <style>
+        .stock-btn.plus, .stock-btn.minus { display: none; }
+body.admin-mode .stock-btn.plus, body.admin-mode .stock-btn.minus { display: inline-block; }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <header>
+        <div class="header-row-1">
+            <h1>🏍️ SpeedX Bike Palace</h1>
+            <nav>
+                <button class="nav-link" onclick="document.getElementById('home').scrollIntoView()">Home</button>
+                <button class="nav-link" onclick="document.getElementById('rent').scrollIntoView()">Rentals</button>
+                <button class="nav-link" onclick="document.getElementById('BIKE_STOCKS').scrollIntoView()">Sell</button>
+                <button class="nav-link" id="navSellBtn" style="display:none;" onclick="document.getElementById('sell').scrollIntoView()">Sell</button>
+                <button class="nav-link" id="navReviewsBtn" onclick="document.getElementById('testimonials').scrollIntoView()">Reviews</button>
+                <div class="auth-dropdown">
+                    <button class="nav-link account-highlight" onclick="toggleAuthMenu()">Account</button>
+                    <div class="auth-menu" id="authMenu">
+                        <a href="#" class="auth-link" id="loginLink" onclick="handleLogin()">🔐 Login</a>
+                        <a href="#" class="auth-link" id="registerLink" onclick="handleRegister()">📝 Register</a>
+                        <a href="#" class="auth-link" id="adminLoginLink" onclick="handleAdminLogin()">🛡️ Admin Login</a>
+                        <a href="#" class="auth-link" onclick="handleLogout()" style="display:none;" id="logoutLink">🚪 Logout</a>
+                    </div>
+                </div>
+                <!--<button class="nav-btn" onclick="openComparison()">⚖️ Compare</button>
+                <button class="nav-btn" onclick="openContactSupport()">📞 Support</button> -->
+                <button class="nav-link" onclick="openAdminPanel()" id="adminBtn" style="display:none;">Admin</button>
+            </nav>
+        </div>
+        <div class="header-row-2">
+            <div class="search-bar">
+                <button class="nav-btn" onclick="toggleFilterPanel()" style="margin-right: 10px; padding: 8px 15px; font-size: 12px;">🌪️ Filter</button>
+                <input type="text" id="searchInput" placeholder="Search for bikes..." class="search-input" onkeyup="searchBikes()">
+                <button class="search-btn" onclick="searchBikes()">🔍</button>
+            </div>
+            <button class="nav-link" onclick="toggleCartMenu()">
+            <button class="cart-btn" onclick="toggleCartMenu()">
+                Cart
+                <span class="cart-count" id="cartCount">0</span>
+            </button>
+            <div class="cart-menu" id="cartMenu">
+                <div class="cart-header">
+                    <h3>Shopping Cart</h3>
+                    <button class="close-cart" onclick="toggleCartMenu()">✕</button>
+                </div>
+                <div class="cart-items" id="cartItems">
+                    <p class="empty-cart">Your cart is empty</p>
+                </div>
+                <div class="cart-footer">
+                    <button class="checkout-btn" onclick="checkout()">Checkout</button>
+                    <button class="clear-cart-btn" onclick="clearCart()">Clear Cart</button>
+                </div>
+            </div>
+            <button class="nav-link" id="navWishlistBtn" onclick="openWishlist()" style="display:none; padding: 10px 20px;">Wishlist</button>
+        </div>
+    </header>
+
+    <!-- Filter Panel -->
+    <div id="filterPanel" class="filter-panel">
+        <button class="close-filter" onclick="toggleFilterPanel()">×</button>
+        <div class="filter-group">
+            <label>Brand:</label>
+            <select id="filterBrand" class="filter-select" onchange="applyFilters()">
+                <option value="all">All Brands</option>
+                <option value="Royal Enfield">Royal Enfield</option>
+                <option value="Yamaha">Yamaha</option>
+                <option value="KTM">KTM</option>
+                <option value="Honda">Honda</option>
+                <option value="Bajaj">Bajaj</option>
+                <option value="TVS">TVS</option>
+                <option value="Kawasaki">Kawasaki</option>
+                <option value="BMW">BMW</option>
+                <option value="Dodge">Dodge</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Type:</label>
+            <select id="filterType" class="filter-select" onchange="applyFilters()">
+                <option value="all">All Types</option>
+                <option value="Cruiser">Cruiser</option>
+                <option value="Sports">Sports</option>
+                <option value="Commuter">Commuter</option>
+                <option value="Superbike">Superbike</option>
+            </select>
+        </div>
+        <button class="nav-btn" onclick="resetFilters()" style="padding: 8px 15px; font-size: 12px;">Reset</button>
+    </div>
+
+    <!-- Search Results Modal -->
+    <div id="searchResultsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeSearchResults()">&times;</span>
+            <h2>Search Results</h2>
+            <div id="searchResults" class="search-results-container"></div>
+        </div>
+    </div>
+
+    <!-- Wishlist Modal -->
+    <div id="wishlistModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeWishlist()">&times;</span>
+            <h2>❤️ My Wishlist</h2>
+            <div id="wishlistItems" class="search-results-container"></div>
+        </div>
+    </div>
+
+    <!-- Bike Details Modal -->
+    <div id="bikeDetailsModal" class="modal">
+        <div class="modal-content bike-details-modal">
+            <span class="close-modal" onclick="closeBikeDetails()">&times;</span>
+            <div class="bike-details-container">
+                <div class="bike-details-image">
+                    <img id="bikeDetailsImg" src="" alt="Bike">
+                </div>
+                <div class="bike-details-info">
+                    <h2 id="bikeDetailsName"></h2>
+                    <p class="bike-details-price" id="bikeDetailsPrice"></p>
+                    <p class="bike-details-summary" id="bikeDetailsSummary"></p>
+                    
+                    <!-- Rental Date Inputs -->
+                    <div id="rentalInputs" class="rental-inputs" style="display:none;">
+                        <div class="date-row">
+                            <div class="date-group">
+                                <label>From:</label>
+                                <input type="date" id="startDate" onchange="calculateRentTotal()">
+                            </div>
+                            <div class="date-group">
+                                <label>To:</label>
+                                <input type="date" id="endDate" onchange="calculateRentTotal()">
+                            </div>
+                        </div>
+                        <p id="rentalTotalCost" class="rental-total">Total: ₹0</p>
+                    </div>
+                    
+                    <div class="bike-reviews">
+                        <h3>Customer Reviews</h3>
+                        <div id="bikeDetailsReviews" class="reviews-list"></div>
+                    </div>
+                    
+                    <button class="add-to-cart-btn bike-details-cart-btn" id="bikeDetailsCartBtn" onclick="addBikeToCart()">Add to Cart</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Home -->
+    <section id="home" class="section">
+        <video autoplay muted loop class="home-video">
+            <source src="pics\Motorbike_Video_Generation_Request.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <div class="home-content">
+            <div class="home-logo">
+                <img src="pics\Screenshot_2026-01-27_093601-removebg-preview.png" alt="Bike Showroom Logo" class="logo">
+            </div>
+            <div class="home-text">
+                <h2>Welcome to SpeedX Bike Palace</h2>
+                <p>Your one solution for Rent, Buy, and Sell bikes.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Rentals -->
+    <section id="rent" class="section">
+        <h2>Bike Rentals</h2>
+        <div class="swipe-container">
+            <div class="swipe-wrapper">
+                <div class="swipe-slide">
+                    <img src="pics\WhatsApp Image 2026-01-21 at 10.06.24 AM.jpeg" alt="Royal Enfield GT650" onclick="openBikeDetails(1)" class="clickable-bike-img">
+                    <h3>Royal Enfield GT650</h3>
+                    <p>₹2000/day</p>
+                    <div class="stock-info">
+                        <p class="stock-label">Available:</p>
+                        <div class="stock-counter">
+                            <button class="stock-btn minus" onclick="decreaseStock(this)">−</button>
+                            <div class="stock-display">6</div>
+                            <button class="stock-btn plus" onclick="increaseStock(this)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="swipe-slide">
+                    <img src="pics\WhatsApp Image 2026-01-21 at 10.11.42 AM.jpeg" alt="Yamaha R15" onclick="openBikeDetails(2)" class="clickable-bike-img">
+                    <h3>Yamaha R15</h3>
+                    <p>₹4000/day</p>
+                    <div class="stock-info">
+                        <p class="stock-label">Available:</p>
+                        <div class="stock-counter">
+                            <button class="stock-btn minus" onclick="decreaseStock(this)">−</button>
+                            <div class="stock-display">8</div>
+                            <button class="stock-btn plus" onclick="increaseStock(this)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="swipe-slide">
+                    <img src="pics\WhatsApp Image 2026-01-21 at 10.13.24 AM.jpeg" alt="KTM Duke" onclick="openBikeDetails(3)" class="clickable-bike-img">
+                    <h3>KTM Duke</h3>
+                    <p>₹2500/day</p>
+                    <div class="stock-info">
+                        <p class="stock-label">Available:</p>
+                        <div class="stock-counter">
+                            <button class="stock-btn minus" onclick="decreaseStock(this)">−</button>
+                            <div class="stock-display">4</div>
+                            <button class="stock-btn plus" onclick="increaseStock(this)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="swipe-slide">
+                    <img src="pics\WhatsApp Image 2026-01-21 at 10.17.43 AM.jpeg" alt="Honda Shine" onclick="openBikeDetails(4)" class="clickable-bike-img">
+                    <h3>Honda Shine</h3>
+                    <p>₹1400/day</p>
+                    <div class="stock-info">
+                        <p class="stock-label">Available:</p>
+                        <div class="stock-counter">
+                            <button class="stock-btn minus" onclick="decreaseStock(this)">−</button>
+                            <div class="stock-display">5</div>
+                            <button class="stock-btn plus" onclick="increaseStock(this)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="swipe-slide">
+                    <img src="pics\WhatsApp Image 2026-01-21 at 10.21.39 AM.jpeg" alt="Pulsar 220" onclick="openBikeDetails(5)" class="clickable-bike-img">
+                    <h3>Pulsar 220</h3>
+                    <p>₹1600/day</p>
+                    <div class="stock-info">
+                        <p class="stock-label">Available:</p>
+                        <div class="stock-counter">
+                            <button class="stock-btn minus" onclick="decreaseStock(this)">−</button>
+                            <div class="stock-display">3</div>
+                            <button class="stock-btn plus" onclick="increaseStock(this)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="swipe-slide">
+                    <img src="pics\WhatsApp Image 2026-01-21 at 10.25.11 AM.jpeg" alt="Apache RTR" onclick="openBikeDetails(6)" class="clickable-bike-img">
+                    <h3>Apache RTR</h3>
+                    <p>₹1700/day</p>
+                    <div class="stock-info">
+                        <p class="stock-label">Available:</p>
+                        <div class="stock-counter">
+                            <button class="stock-btn minus" onclick="decreaseStock(this)">−</button>
+                            <div class="stock-display">7</div>
+                            <button class="stock-btn plus" onclick="increaseStock(this)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="swipe-slide">
+                    <img src="pics\WhatsApp Image 2026-01-21 at 10.17.46 AM.jpeg" alt="RX 100" onclick="openBikeDetails(7)" class="clickable-bike-img">
+                    <h3>RX 100</h3>
+                    <p>₹2000/day</p>
+                    <div class="stock-info">
+                        <p class="stock-label">Available:</p>
+                        <div class="stock-counter">
+                            <button class="stock-btn minus" onclick="decreaseStock(this)">−</button>
+                            <div class="stock-display">2</div>
+                            <button class="stock-btn plus" onclick="increaseStock(this)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="swipe-slide">
+                    <img src="pics/WhatsApp Image 2026-01-21 at 10.11.19 AM.jpeg" alt="Yamaha MT15" onclick="openBikeDetails(8)" class="clickable-bike-img">
+                    <h3>Yamaha MT15</h3>
+                    <p>₹2000/day</p>
+                    <div class="stock-info">
+                        <p class="stock-label">Available:</p>
+                        <div class="stock-counter">
+                            <button class="stock-btn minus" onclick="decreaseStock(this)">−</button>
+                            <div class="stock-display">4</div>
+                            <button class="stock-btn plus" onclick="increaseStock(this)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="swipe-slide">
+                    <img src="pics\WhatsApp Image 2026-01-22 at 10.00.30 AM.jpeg" alt="Kawasaki Ninja" onclick="openBikeDetails(9)" class="clickable-bike-img">
+                    <h3>Kawasaki Ninja</h3>
+                    <p>₹5000/day</p>
+                    <div class="stock-info">
+                        <p class="stock-label">Available:</p>
+                        <div class="stock-counter">
+                            <button class="stock-btn minus" onclick="decreaseStock(this)">−</button>
+                            <div class="stock-display">4</div>
+                            <button class="stock-btn plus" onclick="increaseStock(this)">+</button>
+                        </div>
+                    </div>
+                </div> 
+                <div class="swipe-slide">
+                    <img src="pics\WhatsApp Image 2026-01-22 at 9.58.03 AM.jpeg" alt="BMW M 1000 RR" onclick="openBikeDetails(10)" class="clickable-bike-img">
+                    <h3>BMW M 1000 RR</h3>
+                    <p>₹5500/day</p>
+                    <div class="stock-info">
+                        <p class="stock-label">Available:</p>
+                        <div class="stock-counter">
+                            <button class="stock-btn minus" onclick="decreaseStock(this)">−</button>
+                            <div class="stock-display">4</div>
+                            <button class="stock-btn plus" onclick="increaseStock(this)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="swipe-slide">
+                    <img src="pics\WhatsApp Image 2026-01-22 at 10.03.27 AM.jpeg" alt="Pulsar NS200" onclick="openBikeDetails(11)" class="clickable-bike-img">
+                    <h3>Pulsar NS200</h3>
+                    <p>₹2800/day</p>
+                    <div class="stock-info">
+                        <p class="stock-label">Available:</p>
+                        <div class="stock-counter">
+                            <button class="stock-btn minus" onclick="decreaseStock(this)">−</button>
+                            <div class="stock-display">4</div>
+                            <button class="stock-btn plus" onclick="increaseStock(this)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="swipe-slide">
+                    <img src="pics\WhatsApp Image 2026-01-22 at 10.08.48 AM.jpeg" alt="Dodge Tomahawk" onclick="openBikeDetails(12)" class="clickable-bike-img">
+                    <h3>Dodge Tomahawk</h3>
+                    <p>₹10000/day</p>
+                    <div class="stock-info">
+                        <p class="stock-label">Available:</p>
+                        <div class="stock-counter">
+                            <button class="stock-btn minus" onclick="decreaseStock(this)">−</button>
+                            <div class="stock-display">4</div>
+                            <button class="stock-btn plus" onclick="increaseStock(this)">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button class="swipe-btn prev" onclick="swipeLeft(this)">&#10094;</button>
+            <button class="swipe-btn next" onclick="swipeRight(this)">&#10095;</button>
+        </div>
+    </section>
+
+    <!-- BIKES FOR SELL -->
+    <section id="BIKE_STOCKS" class="section">
+        <h2>BIKES FOR SELL</h2>
+        <div class="swipe-container">
+            <div class="swipe-wrapper">
+                <div class="swipe-slide">
+                    <img src="pics\WhatsApp Image 2026-01-21 at 10.17.43 AM.jpeg" alt="Honda Shine" onclick="openBikeDetails(4)" class="clickable-bike-img">
+                    <h3>Honda Shine</h3>
+                    <p>₹70,000</p>
+                    <div class="stock-info">
+                        <p class="stock-label">Available:</p>
+                        <div class="stock-counter">
+                            <button class="stock-btn minus" onclick="decreaseStock(this)">−</button>
+                            <div class="stock-display">5</div>
+                            <button class="stock-btn plus" onclick="increaseStock(this)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="swipe-slide">
+                    <img src="pics\WhatsApp Image 2026-01-21 at 10.21.39 AM.jpeg" alt="Pulsar 220" onclick="openBikeDetails(5)" class="clickable-bike-img">
+                    <h3>Pulsar 220</h3>
+                    <p>₹1,20,000</p>
+                    <div class="stock-info">
+                        <p class="stock-label">Available:</p>
+                        <div class="stock-counter">
+                            <button class="stock-btn minus" onclick="decreaseStock(this)">−</button>
+                            <div class="stock-display">3</div>
+                            <button class="stock-btn plus" onclick="increaseStock(this)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="swipe-slide">
+                    <img src="pics\WhatsApp Image 2026-01-21 at 10.25.11 AM.jpeg" alt="Apache RTR" onclick="openBikeDetails(6)" class="clickable-bike-img">
+                    <h3>Apache RTR</h3>
+                    <p>₹1,10,000</p>
+                    <div class="stock-info">
+                        <p class="stock-label">Available:</p>
+                        <div class="stock-counter">
+                            <button class="stock-btn minus" onclick="decreaseStock(this)">−</button>
+                            <div class="stock-display">7</div>
+                            <button class="stock-btn plus" onclick="increaseStock(this)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="swipe-slide">
+                    <img src="pics\WhatsApp Image 2026-01-21 at 10.17.46 AM.jpeg" alt="RX 100" onclick="openBikeDetails(7)" class="clickable-bike-img">
+                    <h3>RX 100</h3>
+                    <p>₹1,50,000</p>
+                    <div class="stock-info">
+                        <p class="stock-label">Available:</p>
+                        <div class="stock-counter">
+                            <button class="stock-btn minus" onclick="decreaseStock(this)">−</button>
+                            <div class="stock-display">2</div>
+                            <button class="stock-btn plus" onclick="increaseStock(this)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="swipe-slide">
+                    <img src="pics\WhatsApp Image 2026-01-21 at 10.06.24 AM.jpeg" alt="Royal Enfield GT650" onclick="openBikeDetails(1)" class="clickable-bike-img">
+                    <h3>Royal Enfield GT650</h3>
+                    <p>₹2000/day</p>
+                    <div class="stock-info">
+                        <p class="stock-label">Available:</p>
+                        <div class="stock-counter">
+                            <button class="stock-btn minus" onclick="decreaseStock(this)">−</button>
+                            <div class="stock-display">6</div>
+                            <button class="stock-btn plus" onclick="increaseStock(this)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="swipe-slide">
+                    <img src="pics\WhatsApp Image 2026-01-21 at 10.11.42 AM.jpeg" alt="Yamaha R15" onclick="openBikeDetails(2)" class="clickable-bike-img">
+                    <h3>Yamaha R15</h3>
+                    <p>₹4000/day</p>
+                    <div class="stock-info">
+                        <p class="stock-label">Available:</p>
+                        <div class="stock-counter">
+                            <button class="stock-btn minus" onclick="decreaseStock(this)">−</button>
+                            <div class="stock-display">8</div>
+                            <button class="stock-btn plus" onclick="increaseStock(this)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="swipe-slide">
+                    <img src="pics\WhatsApp Image 2026-01-22 at 9.58.03 AM.jpeg" alt="BMW M 1000 RR" onclick="openBikeDetails(10)" class="clickable-bike-img">
+                    <h3>BMW M 1000 RR</h3>
+                    <p>₹2,70,000</p>
+                    <div class="stock-info">
+                        <p class="stock-label">Available:</p>
+                        <div class="stock-counter">
+                            <button class="stock-btn minus" onclick="decreaseStock(this)">−</button>
+                            <div class="stock-display">4</div>
+                            <button class="stock-btn plus" onclick="increaseStock(this)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="swipe-slide">
+                    <img src="pics\WhatsApp Image 2026-01-21 at 10.13.24 AM.jpeg" alt="KTM Duke" onclick="openBikeDetails(3)" class="clickable-bike-img">
+                    <h3>KTM Duke</h3>
+                    <p>₹2500/day</p>
+                    <div class="stock-info">
+                        <p class="stock-label">Available:</p>
+                        <div class="stock-counter">
+                            <button class="stock-btn minus" onclick="decreaseStock(this)">−</button>
+                            <div class="stock-display">4</div>
+                            <button class="stock-btn plus" onclick="increaseStock(this)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="swipe-slide">
+                    <img src="pics\WhatsApp Image 2026-01-22 at 10.00.30 AM.jpeg" alt="Kawasaki Ninja" onclick="openBikeDetails(9)" class="clickable-bike-img">
+                    <h3>Kawasaki Ninja</h3>
+                    <p>₹3,70,000</p>
+                    <div class="stock-info">
+                        <p class="stock-label">Available:</p>
+                        <div class="stock-counter">
+                            <button class="stock-btn minus" onclick="decreaseStock(this)">−</button>
+                            <div class="stock-display">4</div>
+                            <button class="stock-btn plus" onclick="increaseStock(this)">+</button>
+                        </div>
+                    </div>
+                </div> 
+                <div class="swipe-slide">
+                    <img src="pics\WhatsApp Image 2026-01-22 at 9.58.03 AM.jpeg" alt="BMW M 1000 RR" onclick="openBikeDetails(10)" class="clickable-bike-img">
+                    <h3>BMW M 1000 RR</h3>
+                    <p>₹2,70,000</p>
+                    <div class="stock-info">
+                        <p class="stock-label">Available:</p>
+                        <div class="stock-counter">
+                            <button class="stock-btn minus" onclick="decreaseStock(this)">−</button>
+                            <div class="stock-display">4</div>
+                            <button class="stock-btn plus" onclick="increaseStock(this)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="swipe-slide">
+                    <img src="pics\WhatsApp Image 2026-01-22 at 10.03.27 AM.jpeg" alt="Pulsar NS200" onclick="openBikeDetails(11)" class="clickable-bike-img">
+                    <h3>Pulsar NS200</h3>
+                    <p>₹2,70,000</p>
+                    <div class="stock-info">
+                        <p class="stock-label">Available:</p>
+                        <div class="stock-counter">
+                            <button class="stock-btn minus" onclick="decreaseStock(this)">−</button>
+                            <div class="stock-display">4</div>
+                            <button class="stock-btn plus" onclick="increaseStock(this)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="swipe-slide">
+                    <img src="pics\WhatsApp Image 2026-01-22 at 10.08.48 AM.jpeg" alt="Dodge Tomahawk" onclick="openBikeDetails(12)" class="clickable-bike-img">
+                    <h3>Dodge Tomahawk</h3>
+                    <p>₹76,70,000</p>
+                    <div class="stock-info">
+                        <p class="stock-label">Available:</p>
+                        <div class="stock-counter">
+                            <button class="stock-btn minus" onclick="decreaseStock(this)">−</button>
+                            <div class="stock-display">4</div>
+                            <button class="stock-btn plus" onclick="increaseStock(this)">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button class="swipe-btn prev" onclick="swipeLeft(this)">&#10094;</button>
+            <button class="swipe-btn next" onclick="swipeRight(this)">&#10095;</button>
+        </div>
+    </section>
+
+    <!-- Testimonials (Visible to Users) -->
+    <section id="testimonials" class="section" style="background-color: black; color: white;">
+        <h2 style="color: white;">🗣️ Customer Testimonials</h2>
+        <div class="testimonials-content">
+            <!-- Left Side: Review Form -->
+            <div class="testimonials-form">
+                <h3 style="color: black; margin-bottom: 20px;">Write a Review</h3>
+                <form class="sell-form" id="reviewForm" onsubmit="submitCustomerReview(event)" style="margin: 0; max-width: 100%; box-shadow: none; padding: 0;">
+                    <div class="form-group">
+                        <label>Name:</label>
+                        <input type="text" id="reviewName" placeholder="Your Name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Select Bike:</label>
+                        <select id="reviewBike" style="padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; width: 100%; font-size: 14px; font-family: Arial, sans-serif;" required>
+                            <option value="" disabled selected>Select a bike...</option>
+                            <option value="Royal Enfield GT650">Royal Enfield GT650</option>
+                            <option value="Yamaha R15">Yamaha R15</option>
+                            <option value="KTM Duke">KTM Duke</option>
+                            <option value="Honda Shine">Honda Shine</option>
+                            <option value="Pulsar 220">Pulsar 220</option>
+                            <option value="Apache RTR">Apache RTR</option>
+                            <option value="RX 100">RX 100</option>
+                            <option value="Yamaha MT15">Yamaha MT15</option>
+                            <option value="Kawasaki Ninja">Kawasaki Ninja</option>
+                            <option value="BMW M 1000 RR">BMW M 1000 RR</option>
+                            <option value="Pulsar NS200">Pulsar NS200</option>
+                            <option value="Dodge Tomahawk">Dodge Tomahawk</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Rating:</label>
+                        <select id="reviewRating" style="padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; width: 100%; font-size: 14px; font-family: Arial, sans-serif;" required>
+                            <option value="⭐⭐⭐⭐⭐">⭐⭐⭐⭐⭐ (Excellent)</option>
+                            <option value="⭐⭐⭐⭐☆">⭐⭐⭐⭐☆ (Very Good)</option>
+                            <option value="⭐⭐⭐☆☆">⭐⭐⭐☆☆ (Good)</option>
+                            <option value="⭐⭐☆☆☆">⭐⭐☆☆☆ (Fair)</option>
+                            <option value="⭐☆☆☆☆">⭐☆☆☆☆ (Poor)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Comment:</label>
+                        <textarea id="reviewComment" placeholder="Share your experience..." required style="min-height: 100px;"></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn" style="width: 100%;">Submit Review</button>
+                </form>
+            </div>
+
+            <!-- Right Side: Reviews List -->
+            <div class="testimonials-list">
+                <h3 style="color: black; margin-bottom: 20px; position: sticky; top: 0; background: white; z-index: 10; padding-bottom: 10px; border-bottom: 1px solid #eee;">Recent Reviews</h3>
+                <div class="reviews-scroller" id="reviewsScroller">
+                    <div class="review-card" style="color: #333;">
+                        <div class="review-header">
+                            <h4>Rahul Dravid</h4>
+                            <span class="review-stars">⭐⭐⭐⭐⭐</span>
+                        </div>
+                        <p class="review-bike-tag">Bike: Royal Enfield GT650</p>
+                        <p class="review-body">"Excellent service! The Royal Enfield was in top condition."</p>
+                        <div class="admin-actions" style="display: none; margin-top: 10px; gap: 10px;">
+                            <button onclick="editReview(this)" style="background: #ff9800; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Edit</button>
+                            <button onclick="deleteReview(this)" style="background: #f44336; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Remove</button>
+                        </div>
+                    </div>
+                    <div class="review-card" style="color: #333;">
+                        <div class="review-header">
+                            <h4>Priya Sharma</h4>
+                            <span class="review-stars">⭐⭐⭐⭐⭐</span>
+                        </div>
+                        <p class="review-bike-tag">Bike: Yamaha R15</p>
+                        <p class="review-body">"Sold my old bike here for a great price. Very transparent process."</p>
+                        <div class="admin-actions" style="display: none; margin-top: 10px; gap: 10px;">
+                            <button onclick="editReview(this)" style="background: #ff9800; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Edit</button>
+                            <button onclick="deleteReview(this)" style="background: #f44336; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Remove</button>
+                        </div>
+                    </div>
+                    <div class="review-card" style="color: #333;">
+                        <div class="review-header">
+                            <h4>Amit Patel</h4>
+                            <span class="review-stars">⭐⭐⭐⭐☆</span>
+                        </div>
+                        <p class="review-bike-tag">Bike: KTM Duke</p>
+                        <p class="review-body">"Rented a KTM for the weekend. Smooth experience overall."</p>
+                        <div class="admin-actions" style="display: none; margin-top: 10px; gap: 10px;">
+                            <button onclick="editReview(this)" style="background: #ff9800; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Edit</button>
+                            <button onclick="deleteReview(this)" style="background: #f44336; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Remove</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sell -->
+    <section id="sell" class="section" style="display:none;">
+        <h2>Upload the Details</h2>
+        <div class="sell-tabs">
+            <button class="sell-tab-btn active" onclick="switchSellTab('rentals')">🏍️ Bike Rentals</button>
+            <button class="sell-tab-btn" onclick="switchSellTab('sells')">🛒 Bike Sells</button>
+        </div>
+
+        <!-- Bike Rentals Form -->
+        <div id="rentalsTab" class="sell-tab-content active">
+            <form class="sell-form" id="rentalForm" onsubmit="submitBikeRental(event)">
+                <div class="form-group">
+                    <label>Bike Name:</label>
+                    <input type="text" id="rentalBikeName" placeholder="Enter bike name" required>
+                </div>
+                <div class="form-group">
+                    <label>Price (per day):</label>
+                    <input type="text" id="rentalPrice" placeholder="e.g., ₹2000/day" required>
+                </div>
+                <div class="form-group">
+                    <label>Summary:</label>
+                    <textarea id="rentalSummary" placeholder="Enter bike description and features" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Upload Bike Image:</label>
+                    <input type="file" id="rentalImage" accept="image/*" required>
+                    <div id="rentalImagePreview" class="image-preview"></div>
+                </div>
+                <button type="submit" class="submit-btn">Add to Rentals</button>
+            </form>
+        </div>
+
+        <!-- Bike Sells Form -->
+        <div id="sellsTab" class="sell-tab-content">
+            <form class="sell-form" id="sellForm" onsubmit="submitBikeSell(event)">
+                <div class="form-group">
+                    <label>Bike Name:</label>
+                    <input type="text" id="sellBikeName" placeholder="Enter bike name" required>
+                </div>
+                <div class="form-group">
+                    <label>Price:</label>
+                    <input type="text" id="sellPrice" placeholder="e.g., ₹1,20,000" required>
+                </div>
+                <div class="form-group">
+                    <label>Summary:</label>
+                    <textarea id="sellSummary" placeholder="Enter bike description and specifications" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Upload Bike Image:</label>
+                    <input type="file" id="sellImage" accept="image/*" required>
+                    <div id="sellImagePreview" class="image-preview"></div>
+                </div>
+                <button type="submit" class="submit-btn">Add to Sells</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Admin User Management Panel -->
+    <section id="adminUserPanel" class="section" style="display:none;">
+        <h2>User Management</h2>
+        <div style="overflow-x: auto; max-width: 800px; margin: 0 auto;">
+            <table style="width: 100%; border-collapse: collapse; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+                <thead>
+                    <tr style="background: #333; color: white;">
+                        <th style="padding: 12px; border: 1px solid #ddd;">Name</th>
+                        <th style="padding: 12px; border: 1px solid #ddd;">Email</th>
+                        <th style="padding: 12px; border: 1px solid #ddd;">Username</th>
+                        <th style="padding: 12px; border: 1px solid #ddd;">Password</th>
+                        <th style="padding: 12px; border: 1px solid #ddd;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="userTableBody">
+                    <!-- User rows will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <span class="close-modal" onclick="closeLoginModal()">&times;</span>
+            <h2>Login</h2>
+            <form class="sell-form" id="loginForm" onsubmit="submitLogin(event)">
+                <div class="form-group">
+                    <label>Username:</label>
+                    <input type="text" id="loginUsername" required>
+                </div>
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="submit" class="submit-btn" style="width: 100%;">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <span class="close-modal" onclick="closeRegisterModal()">&times;</span>
+            <h2>Register</h2>
+            <form class="sell-form" id="registerForm" onsubmit="submitRegister(event)">
+                <div class="form-group">
+                    <label>Name:</label>
+                    <input type="text" id="regName" required>
+                </div>
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" id="regEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Username:</label>
+                    <input type="text" id="regUsername" required>
+                </div>
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" id="regPassword" required>
+                </div>
+                <div class="form-group">
+                    <label>Confirm Password:</label>
+                    <input type="password" id="regConfirmPassword" required>
+                </div>
+                <button type="submit" class="submit-btn" style="width: 100%;">Register</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Login Modal -->
+    <div id="adminLoginModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <span class="close-modal" onclick="closeAdminLoginModal()">&times;</span>
+            <h2>Admin Login</h2>
+            <form class="sell-form" id="adminLoginForm" onsubmit="submitAdminLogin(event)">
+                <div class="form-group">
+                    <label>Username:</label>
+                    <input type="text" id="adminUsername" required>
+                </div>
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" id="adminPassword" required>
+                </div>
+                <button type="submit" class="submit-btn" style="width: 100%;">Login as Admin</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div id="paymentModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close-modal" onclick="closePaymentModal()">&times;</span>
+            <h2>💳 Secure Checkout</h2>
+            <div class="card-icons">
+                <span>💳</span> <span>🏦</span>
+            </div>
+            <form class="payment-form" onsubmit="processPayment(event)">
+                <div class="payment-field">
+                    <label>Cardholder Name</label>
+                    <input type="text" placeholder="John Doe" required>
+                </div>
+                <div class="payment-field">
+                    <label>Card Number</label>
+                    <input type="text" placeholder="0000 0000 0000 0000" maxlength="19" required>
+                </div>
+                <div class="payment-row">
+                    <div class="payment-field">
+                        <label>Expiry Date</label>
+                        <input type="text" placeholder="MM/YY" maxlength="5" required>
+                    </div>
+                    <div class="payment-field">
+                        <label>CVV</label>
+                        <input type="password" placeholder="123" maxlength="3" required>
+                    </div>
+                </div>
+                <div class="payment-total" id="paymentTotalDisplay">Total: ₹0</div>
+                <button type="submit" class="submit-btn" style="width: 100%; margin-top: 10px;">Pay Now</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p><u>THANKS FOR VISITING!</u></p>
+        <p>This Website is developed by Bhanu and Deeksha.</p><br>
+        <p><u>Contact us:</u></p>
+        <p>Email: contact@bikeshowroom.com</p>
+        <p>Phone: +91 98765 43210</p>
+        <p>Address: 123 Bike Lane, Motor City, Bengaluru, india.</p>
+    </footer>
+
+    <script>
+        function swipeLeft(btn) {
+            const container = btn.parentElement;
+            const wrapper = container.querySelector('.swipe-wrapper');
+            wrapper.scrollLeft -= 400;
+        }
+
+        function swipeRight(btn) {
+            const container = btn.parentElement;
+            const wrapper = container.querySelector('.swipe-wrapper');
+            wrapper.scrollLeft += 400;
+        }
+
+        function increaseStock(btn) {
+            const display = btn.parentElement.querySelector('.stock-display');
+            let currentStock = parseInt(display.textContent);
+            display.textContent = currentStock + 1;
+        }
+
+        function decreaseStock(btn) {
+            const display = btn.parentElement.querySelector('.stock-display');
+            let currentStock = parseInt(display.textContent);
+            if (currentStock > 0) {
+                display.textContent = currentStock - 1;
+            }
+        }
+
+        // Auth menu toggle
+        let isLoggedIn = false;
+        let isAdmin = false;
+        let registeredUsers = JSON.parse(localStorage.getItem('bikeUsers')) || [
+            { name: "Default User", email: "user@example.com", username: "user", password: "user123" }
+        ];
+        function toggleAuthMenu() {
+            const authMenu = document.getElementById('authMenu');
+            authMenu.classList.toggle('show');
+        }
+
+        // Close auth menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const authDropdown = document.querySelector('.auth-dropdown');
+            if (!authDropdown.contains(event.target)) {
+                const authMenu = document.getElementById('authMenu');
+                authMenu.classList.remove('show');
+            }
+        });
+
+        // Handle login
+        function handleLogin() {
+            document.getElementById('loginModal').classList.add('show');
+            document.getElementById('authMenu').classList.remove('show');
+        }
+
+        function closeLoginModal() {
+            document.getElementById('loginModal').classList.remove('show');
+        }
+
+        function submitLogin(event) {
+            event.preventDefault();
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            const validUser = registeredUsers.find(u => u.username === username && u.password === password);
+
+            if (validUser) {
+                isLoggedIn = true;
+                alert("✅ Login Successful!");
+                document.getElementById('testimonials').style.display = 'block';
+                document.getElementById('navReviewsBtn').style.display = 'inline-block';
+                document.getElementById('navWishlistBtn').style.display = 'inline-block';
+                document.body.classList.add('logged-in');
+                document.getElementById('authMenu').classList.remove('show');
+                document.getElementById('loginLink').style.display = 'none';
+                document.getElementById('registerLink').style.display = 'none';
+                document.getElementById('adminLoginLink').style.display = 'none';
+                document.getElementById('logoutLink').style.display = 'block';
+                closeLoginModal();
+                document.getElementById('loginForm').reset();
+            } else {
+                alert("❌ Invalid Username or Password!");
+            }
+        }
+
+        // Handle register
+        function handleRegister() {
+            document.getElementById('registerModal').classList.add('show');
+            document.getElementById('authMenu').classList.remove('show');
+        }
+
+        function closeRegisterModal() {
+            document.getElementById('registerModal').classList.remove('show');
+        }
+
+        function submitRegister(event) {
+            event.preventDefault();
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            const username = document.getElementById('regUsername').value;
+            const password = document.getElementById('regPassword').value;
+            const confirmPassword = document.getElementById('regConfirmPassword').value;
+
+            if (registeredUsers.some(u => u.username === username)) {
+                alert("❌ Username already exists!");
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                alert("❌ Passwords do not match!");
+                return;
+            }
+
+            registeredUsers.push({ name, email, username, password });
+            localStorage.setItem('bikeUsers', JSON.stringify(registeredUsers));
+            alert("✅ Registration Successful! You can now login.");
+            closeRegisterModal();
+            document.getElementById('registerForm').reset();
+        }
+
+        // Handle Admin Login
+        function handleAdminLogin() {
+            document.getElementById('adminLoginModal').classList.add('show');
+            document.getElementById('authMenu').classList.remove('show');
+        }
+
+        function closeAdminLoginModal() {
+            document.getElementById('adminLoginModal').classList.remove('show');
+        }
+
+        function submitAdminLogin(event) {
+            event.preventDefault();
+            const username = document.getElementById('adminUsername').value;
+            const password = document.getElementById('adminPassword').value;
+
+            if (username === "admin" && password === "admin123") {
+                isLoggedIn = true;
+                isAdmin = true;
+                document.body.classList.add('admin-mode');
+                alert("✅ Admin Login Successful!");
+                document.getElementById('sell').style.display = 'block';
+                document.getElementById('navSellBtn').style.display = 'inline-block';
+                document.getElementById('testimonials').style.display = 'block';
+                document.getElementById('navReviewsBtn').style.display = 'inline-block';
+                document.getElementById('navWishlistBtn').style.display = 'inline-block';
+                document.body.classList.add('logged-in');
+                document.querySelectorAll('.admin-actions').forEach(el => el.style.display = 'flex');
+                document.getElementById('authMenu').classList.remove('show');
+                document.getElementById('adminUserPanel').style.display = 'block';
+                renderUserTable();
+                document.getElementById('logoutLink').style.display = 'block';
+                document.getElementById('loginLink').style.display = 'none';
+                document.getElementById('registerLink').style.display = 'none';
+                document.getElementById('adminLoginLink').style.display = 'none';
+                closeAdminLoginModal();
+                document.getElementById('adminLoginForm').reset();
+            } else {
+                alert("❌ Invalid Credentials");
+            }
+        }
+
+        function handleLogout() {
+            isLoggedIn = false;
+            isAdmin = false;
+            document.body.classList.remove('admin-mode');
+            alert('Logged out successfully');
+            document.getElementById('sell').style.display = 'none';
+            document.getElementById('navSellBtn').style.display = 'none';
+            document.getElementById('testimonials').style.display = 'block';
+            document.getElementById('navReviewsBtn').style.display = 'inline-block';
+            document.getElementById('navWishlistBtn').style.display = 'none';
+            document.body.classList.remove('logged-in');
+            document.querySelectorAll('.admin-actions').forEach(el => el.style.display = 'none');
+            document.getElementById('authMenu').classList.remove('show');
+            document.getElementById('adminUserPanel').style.display = 'none';
+            document.getElementById('loginLink').style.display = 'block';
+            document.getElementById('registerLink').style.display = 'block';
+            document.getElementById('adminLoginLink').style.display = 'block';
+            document.getElementById('logoutLink').style.display = 'none';
+        }
+
+        // Cart functionality
+        let cart = [];
+
+        function toggleCartMenu() {
+            const cartMenu = document.getElementById('cartMenu');
+            cartMenu.classList.toggle('show');
+        }
+
+        // Close cart menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const cartBtn = document.querySelector('.cart-btn');
+            const cartMenu = document.getElementById('cartMenu');
+            if (!event.target.closest('.cart-btn') && !cartMenu.contains(event.target)) {
+                cartMenu.classList.remove('show');
+            }
+        });
+
+        // All bikes data for search
+        const allBikes = [
+            { id: 1, name: 'Royal Enfield GT650', price: '₹2000/day' },
+            { id: 2, name: 'Yamaha R15', price: '₹4000/day' },
+            { id: 3, name: 'KTM Duke', price: '₹2500/day' },
+            { id: 4, name: 'Honda Shine', price: '₹1400/day' },
+            { id: 5, name: 'Pulsar 220', price: '₹1600/day' },
+            { id: 6, name: 'Apache RTR', price: '₹1700/day' },
+            { id: 7, name: 'RX 100', price: '₹2000/day' },
+            { id: 8, name: 'Yamaha MT15', price: '₹2000/day' },
+            { id: 9, name: 'Kawasaki Ninja', price: '₹5000/day' },
+            { id: 10, name: 'BMW M 1000 RR', price: '₹5500/day' },
+            { id: 11, name: 'Pulsar NS200', price: '₹2800/day' },
+            { id: 12, name: 'Dodge Tomahawk', price: '₹10,000/day' }
+        ];
+
+        // Search functionality
+        function searchBikes() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+            
+            if (searchTerm === '') {
+                closeSearchResults();
+                return;
+            }
+
+            const results = allBikes.filter(bike => 
+                bike.name.toLowerCase().includes(searchTerm)
+            );
+
+            displaySearchResults(results);
+        }
+
+        function displaySearchResults(results) {
+            const modal = document.getElementById('searchResultsModal');
+            const resultsContainer = document.getElementById('searchResults');
+
+            if (results.length === 0) {
+                resultsContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #999;">No bikes found matching your search.</p>';
+            } else {
+                resultsContainer.innerHTML = results.map(bike => `
+                    <div class="search-result-item">
+                        <h4>${bike.name}</h4>
+                        <p class="search-result-price">${bike.price}</p>
+                        <button class="add-to-cart-btn" id="btn-${bike.id}" onclick="addToCart(${bike.id}, '${bike.name}', '${bike.price}')">
+                            Add to Cart
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            modal.classList.add('show');
+        }
+
+        function closeSearchResults() {
+            const modal = document.getElementById('searchResultsModal');
+            modal.classList.remove('show');
+            document.getElementById('searchInput').value = '';
+        }
+
+        function addToCart(id, name, price) {
+            if (!isLoggedIn) {
+                alert("Please login");
+                return;
+            }
+
+            const existingItem = cart.find(item => item.id === id);
+            
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push({ id, name, price, quantity: 1 });
+            }
+
+            updateCartUI();
+            updateButtonStates();
+
+            // Show confirmation
+            alert(`${name} added to cart!`);
+        }
+
+        function removeFromCart(id) {
+            cart = cart.filter(item => item.id !== id);
+            updateCartUI();
+            updateButtonStates();
+        }
+
+        function updateCartUI() {
+            const cartCount = document.getElementById('cartCount');
+            const cartItems = document.getElementById('cartItems');
+
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            cartCount.textContent = totalItems;
+
+            if (cart.length === 0) {
+                cartItems.innerHTML = '<p class="empty-cart">Your cart is empty</p>';
+            } else {
+                cartItems.innerHTML = cart.map(item => `
+                    <div class="cart-item">
+                        <div class="cart-item-info">
+                            <p class="cart-item-name">${item.name}</p>
+                            <p class="cart-item-price">${item.price} ${item.rentalPeriod ? `(${item.rentalPeriod})` : ''}</p>
+                            ${item.totalCost ? `<p class="cart-item-total">Subtotal: ₹${item.totalCost}</p>` : ''}
+                        </div>
+                        <button class="remove-item-btn" onclick="removeFromCart(${item.id})">Remove</button>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function updateButtonStates() {
+            allBikes.forEach(bike => {
+                const btn = document.getElementById(`btn-${bike.id}`);
+                if (btn) {
+                    const inCart = cart.some(item => item.id === bike.id);
+                    if (inCart) {
+                        btn.textContent = '✓ In Cart';
+                        btn.classList.add('in-cart');
+                    } else {
+                        btn.textContent = 'Add to Cart';
+                        btn.classList.remove('in-cart');
+                    }
+                }
+            });
+        }
+
+        function clearCart() {
+            if (cart.length === 0) {
+                alert('Your cart is already empty!');
+                return;
+            }
+            if (confirm('Are you sure you want to clear your cart?')) {
+                cart = [];
+                updateCartUI();
+                updateButtonStates();
+                alert('Cart cleared!');
+            }
+        }
+
+        // ==========================================
+        // NEW FEATURES: FILTERS, WISHLIST, PAYMENT
+        // ==========================================
+
+        // 1. METADATA FOR FILTERS
+        const bikeMetadata = {
+            1: { brand: 'Royal Enfield', type: 'Cruiser' },
+            2: { brand: 'Yamaha', type: 'Sports' },
+            3: { brand: 'KTM', type: 'Sports' },
+            4: { brand: 'Honda', type: 'Commuter' },
+            5: { brand: 'Bajaj', type: 'Sports' },
+            6: { brand: 'TVS', type: 'Sports' },
+            7: { brand: 'Yamaha', type: 'Cruiser' },
+            8: { brand: 'Yamaha', type: 'Sports' },
+            9: { brand: 'Kawasaki', type: 'Superbike' },
+            10: { brand: 'BMW', type: 'Superbike' },
+            11: { brand: 'Bajaj', type: 'Sports' },
+            12: { brand: 'Dodge', type: 'Superbike' }
+        };
+
+        // 2. FILTER LOGIC
+        function toggleFilterPanel() {
+            document.getElementById('filterPanel').classList.toggle('show');
+        }
+
+        function applyFilters() {
+            const brand = document.getElementById('filterBrand').value;
+            const type = document.getElementById('filterType').value;
+            
+            document.querySelectorAll('.swipe-slide').forEach(slide => {
+                const img = slide.querySelector('.clickable-bike-img');
+                if(!img) return; // Skip non-bike slides (like testimonials)
+                
+                const onclickVal = img.getAttribute('onclick');
+                const idMatch = onclickVal ? onclickVal.match(/\d+/) : null;
+                
+                if(idMatch) {
+                    const id = parseInt(idMatch[0]);
+                    const meta = bikeMetadata[id];
+                    
+                    if(meta) {
+                        let show = true;
+                        if(brand !== 'all' && meta.brand !== brand) show = false;
+                        if(type !== 'all' && meta.type !== type) show = false;
+                        
+                        slide.style.display = show ? 'block' : 'none';
+                    }
+                }
+            });
+        }
+
+        function resetFilters() {
+            document.getElementById('filterBrand').value = 'all';
+            document.getElementById('filterType').value = 'all';
+            applyFilters();
+        }
+
+        // 3. WISHLIST LOGIC
+        let wishlist = JSON.parse(localStorage.getItem('bikeWishlist')) || [];
+
+        function initWishlistIcons() {
+            document.querySelectorAll('.swipe-slide').forEach(slide => {
+                if(slide.querySelector('.wishlist-icon')) return; // Prevent duplicates
+                
+                const img = slide.querySelector('.clickable-bike-img');
+                if(img) {
+                    const onclickVal = img.getAttribute('onclick');
+                    const idMatch = onclickVal ? onclickVal.match(/\d+/) : null;
+                    if(idMatch) {
+                        const id = parseInt(idMatch[0]);
+                        const btn = document.createElement('button');
+                        btn.className = 'wishlist-icon';
+                        btn.innerHTML = wishlist.includes(id) ? '🤍' : '❤️';
+                        btn.onclick = (e) => toggleWishlist(e, id, btn);
+                        
+                        const h3 = slide.querySelector('h3');
+                        if(h3) {
+                            h3.appendChild(btn);
+                        }
+                    }
+                }
+            });
+        }
+
+        function toggleWishlist(e, id, btn) {
+            e.stopPropagation();
+            if(wishlist.includes(id)) {
+                wishlist = wishlist.filter(itemId => itemId !== id);
+                btn.innerHTML = '🤍';
+            } else {
+                wishlist.push(id);
+                btn.innerHTML = '❤️';
+            }
+            localStorage.setItem('bikeWishlist', JSON.stringify(wishlist));
+        }
+
+        function openWishlist() {
+            const container = document.getElementById('wishlistItems');
+            const savedBikes = allBikes.filter(bike => wishlist.includes(bike.id));
+            
+            if (savedBikes.length === 0) {
+                container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #999;">Your wishlist is empty.</p>';
+            } else {
+                container.innerHTML = savedBikes.map(bike => `
+                    <div class="search-result-item">
+                        <h4>${bike.name}</h4>
+                        <p class="search-result-price">${bike.price}</p>
+                        <button class="add-to-cart-btn" onclick="openBikeDetails(${bike.id}); closeWishlist();">View Details</button>
+                    </div>
+                `).join('');
+            }
+            document.getElementById('wishlistModal').classList.add('show');
+        }
+
+        function closeWishlist() {
+            document.getElementById('wishlistModal').classList.remove('show');
+        }
+
+        // 4. PAYMENT SIMULATION
+        function openPaymentModal() {
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            let totalCost = 0;
+            
+            // Calculate rough total (parsing strings like "2000/day" is tricky without dates, 
+            // so we rely on calculated totalCost in cart items if available, else estimate)
+            cart.forEach(item => {
+                if(item.totalCost) {
+                    totalCost += item.totalCost;
+                } else {
+                    // Fallback for simple items
+                    const price = parseInt(item.price.replace(/[^0-9]/g, ''));
+                    totalCost += price * item.quantity;
+                }
+            });
+
+            document.getElementById('paymentTotalDisplay').textContent = `Total: ₹${totalCost}`;
+            document.getElementById('paymentModal').classList.add('show');
+        }
+
+        function closePaymentModal() {
+            document.getElementById('paymentModal').classList.remove('show');
+        }
+
+        function processPayment(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalText = btn.textContent;
+            
+            btn.textContent = "Processing...";
+            btn.disabled = true;
+
+            setTimeout(() => {
+                alert("✅ Payment Successful! Thank you for your order.");
+                cart = [];
+                updateCartUI();
+                updateButtonStates();
+                closePaymentModal();
+                toggleCartMenu();
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }, 2000);
+        }
+
+        function checkout() {
+            if (cart.length === 0) {
+                alert('Your cart is empty!');
+                return;
+            }
+            openPaymentModal();
+        }
+
+        // Bike Details Data with reviews
+        const bikeDetails = {
+            1: {
+                name: 'Royal Enfield GT650',
+                price: '₹2000/day',
+                summary: 'The Royal Enfield GT650 is a modern cruiser motorcycle featuring a 648cc air-cooled engine, excellent handling, and premium comfort. Perfect for long rides with its classic styling and modern reliability.',
+                reviews: [
+                    { author: 'Rajesh Kumar', rating: '★★★★★', text: 'Fantastic bike! Smooth ride and great fuel efficiency.' },
+                    { author: 'Priya Singh', rating: '★★★★☆', text: 'Amazing comfort level. Highly recommend for long rides.' },
+                    { author: 'Arjun Patel', rating: '★★★★★', text: 'Best bike for the price. Reliable and stylish.' }
+                ]
+            },
+            2: {
+                name: 'Yamaha R15',
+                price: '₹4000/day',
+                summary: 'The Yamaha R15 is a high-performance sports bike with a 155cc liquid-cooled engine. Features advanced technology including ABS, LED lighting, and exceptional handling for riders who love speed.',
+                reviews: [
+                    { author: 'Vikram Singh', rating: '★★★★★', text: 'Incredible speed and handling! A true sportsbike.' },
+                    { author: 'Neha Gupta', rating: '★★★★☆', text: 'Great acceleration and smooth gears. Love it!' },
+                    { author: 'Rohan Desai', rating: '★★★★★', text: 'Perfect for track days and spirited riding.' }
+                ]
+            },
+            3: {
+                name: 'KTM Duke',
+                price: '₹2500/day',
+                summary: 'The KTM Duke is a lightweight street bike with a powerful 373cc engine. Known for its aggressive styling, excellent acceleration, and precise handling for an ultimate urban riding experience.',
+                reviews: [
+                    { author: 'Akshat Sharma', rating: '★★★★★', text: 'Incredible acceleration and lightweight handling!' },
+                    { author: 'Divya Nair', rating: '★★★★☆', text: 'Perfect for city commuting and weekend rides.' },
+                    { author: 'Sanjay Kumar', rating: '★★★★★', text: 'Best performance bike in its segment.' }
+                ]
+            },
+            4: {
+                name: 'Honda Shine',
+                price: '₹70,000',
+                summary: 'The Honda Shine is a reliable and fuel-efficient commuter bike with a 125cc engine. Ideal for daily commuting with excellent mileage, comfortable seating, and low maintenance requirements.',
+                reviews: [
+                    { author: 'Rahul Verma', rating: '★★★★☆', text: 'Great mileage and reliability. Perfect commuter bike.' },
+                    { author: 'Anjali Patel', rating: '★★★★☆', text: 'Very comfortable for daily rides to work.' },
+                    { author: 'Suresh Kumar', rating: '★★★★★', text: 'Long-lasting and low maintenance.' }
+                ]
+            },
+            5: {
+                name: 'Pulsar 220',
+                price: '₹1,20,000',
+                summary: 'The Bajaj Pulsar 220 is a powerful street bike with a 220cc engine, offering excellent performance and style. Great for riders looking for a balance between power and efficiency.',
+                reviews: [
+                    { author: 'Karan Singh', rating: '★★★★★', text: 'Amazing power and fuel efficiency!' },
+                    { author: 'Meera Sharma', rating: '★★★★☆', text: 'Very responsive and great handling.' },
+                    { author: 'Amit Desai', rating: '★★★★★', text: 'Best value for money bike.' }
+                ]
+            },
+            6: {
+                name: 'Apache RTR',
+                price: '₹1,10,000',
+                summary: 'The Apache RTR combines performance with style, featuring a 160cc engine and modern design. Excellent for those seeking a blend of power, comfort, and affordable pricing.',
+                reviews: [
+                    { author: 'Nitin Patel', rating: '★★★★★', text: 'Stunning design and smooth performance!' },
+                    { author: 'Shreya Gupta', rating: '★★★★☆', text: 'Comfortable for long rides and daily commute.' },
+                    { author: 'Harish Kumar', rating: '★★★★★', text: 'Best bike in affordable segment.' }
+                ]
+            },
+            7: {
+                name: 'RX 100',
+                price: '₹1,50,000',
+                summary: 'The Yamaha RX 100 is a legendary lightweight motorcycle with a 100cc air-cooled engine. Known for its simplicity, durability, and efficient performance for urban riding.',
+                reviews: [
+                    { author: 'Gaurav Singh', rating: '★★★★☆', text: 'Simple and reliable. Great for beginners.' },
+                    { author: 'Pooja Nair', rating: '★★★★☆', text: 'Easy to maintain and fuel-efficient.' },
+                    { author: 'Ashok Kumar', rating: '★★★★★', text: 'Legendary bike! Still performing great.' }
+                ]
+            },
+            8: {
+                name: 'Yamaha MT15',
+                price: '₹1,70,000',
+                summary: 'The Yamaha MT15 is a middleweight street bike with a 155cc liquid-cooled engine. Combines aggressive styling with excellent maneuverability for modern urban riders.',
+                reviews: [
+                    { author: 'Sameer Patel', rating: '★★★★★', text: 'Perfect balance of power and handling!' },
+                    { author: 'Deepika Singh', rating: '★★★★☆', text: 'Very agile and quick in traffic.' },
+                    { author: 'Vivek Desai', rating: '★★★★★', text: 'Best lightweight performance bike.' }
+                ]
+            },
+            9: {
+                name: 'Kawasaki Ninja',
+                price: '₹3,70,000',
+                summary: 'The Kawasaki Ninja is an ultra-fast superbike with cutting-edge technology and aerodynamic design. Built for speed enthusiasts who demand the absolute best in performance and engineering.',
+                reviews: [
+                    { author: 'Ravi Sharma', rating: '★★★★★', text: 'Incredible speed and precision engineering!' },
+                    { author: 'Simran Kaur', rating: '★★★★★', text: 'The ultimate riding experience!' },
+                    { author: 'Varun Patel', rating: '★★★★★', text: 'Best superbike in the market!' }
+                ]
+            },
+            10: {
+                name: 'BMW M 1000 RR',
+                price: '₹2,70,000',
+                summary: 'The BMW M 1000 RR is a premium superbike combining German engineering with racing heritage. Features state-of-the-art technology and unmatched performance on track and road.',
+                reviews: [
+                    { author: 'Aditya Kumar', rating: '★★★★★', text: 'Premium quality and exceptional performance!' },
+                    { author: 'Neha Sharma', rating: '★★★★★', text: 'Finest engineering and luxury combined.' },
+                    { author: 'Rohit Singh', rating: '★★★★★', text: 'Worth every penny! Masterpiece bike.' }
+                ]
+            },
+            11: {
+                name: 'Pulsar NS200',
+                price: '₹2,70,000',
+                summary: 'The Pulsar NS200 is a stylish and powerful 200cc bike with modern features including dual-channel ABS. Perfect for riders seeking aggression with everyday usability.',
+                reviews: [
+                    { author: 'Jayant Patel', rating: '★★★★☆', text: 'Great looks and good performance!' },
+                    { author: 'Shalini Desai', rating: '★★★★☆', text: 'Very responsive engine and good handling.' },
+                    { author: 'Nikhil Kumar', rating: '★★★★★', text: 'Best value for money 200cc bike.' }
+                ]
+            },
+            12: {
+                name: 'Dodge Tomahawk',
+                price: '₹76,70,000',
+                summary: 'The Dodge Tomahawk is the world\'s fastest motorcycle with a 8.3L V10 engine producing 500 HP. An engineering marvel and collector\'s dream for ultimate performance seekers.',
+                reviews: [
+                    { author: 'Rajendra Singh', rating: '★★★★★', text: 'Unbelievable power! A true masterpiece!' },
+                    { author: 'Amina Khan', rating: '★★★★★', text: 'The most exotic bike ever made!' },
+                    { author: 'Carlos Mendez', rating: '★★★★★', text: 'Pure engineering excellence!' }
+                ]
+            }
+        };
+
+        let currentBikeId = null;
+
+        function openBikeDetails(bikeId) {
+            currentBikeId = bikeId;
+            const bike = bikeDetails[bikeId];
+            
+            if (!bike) return;
+
+            document.getElementById('bikeDetailsImg').src = document.querySelector(`.swipe-slide:nth-child(${bikeId}) img`).src;
+            document.getElementById('bikeDetailsName').textContent = bike.name;
+            document.getElementById('bikeDetailsPrice').textContent = bike.price;
+            document.getElementById('bikeDetailsSummary').textContent = bike.summary;
+            
+            // Setup Rental Inputs if it's a rental bike (contains "/day")
+            const rentalSection = document.getElementById('rentalInputs');
+            if (bike.price.includes('/day')) {
+                rentalSection.style.display = 'block';
+                
+                // Set min date to today
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('startDate').min = today;
+                document.getElementById('endDate').min = today;
+                
+                // Reset values
+                document.getElementById('startDate').value = '';
+                document.getElementById('endDate').value = '';
+                document.getElementById('rentalTotalCost').textContent = 'Total: ₹0';
+            } else {
+                rentalSection.style.display = 'none';
+            }
+
+            const reviewsHtml = bike.reviews.map(review => `
+                <div class="review-item">
+                    <div class="review-author">${review.author}</div>
+                    <div class="review-rating">${review.rating}</div>
+                    <div class="review-text">${review.text}</div>
+                </div>
+            `).join('');
+            
+            document.getElementById('bikeDetailsReviews').innerHTML = reviewsHtml;
+            
+            document.getElementById('bikeDetailsModal').classList.add('show');
+        }
+
+        function closeBikeDetails() {
+            document.getElementById('bikeDetailsModal').classList.remove('show');
+            currentBikeId = null;
+        }
+
+        function calculateRentTotal() {
+            const startVal = document.getElementById('startDate').value;
+            const endVal = document.getElementById('endDate').value;
+            const bike = bikeDetails[currentBikeId];
+
+            if (startVal && endVal && bike) {
+                const start = new Date(startVal);
+                const end = new Date(endVal);
+                const diffTime = Math.abs(end - start);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); // calculate days correctly
+
+                if (diffDays > 0) {
+                    // Extract number from price string (e.g., "₹2000/day" -> 2000)
+                    const pricePerDay = parseInt(bike.price.replace(/[^0-9]/g, ''));
+                    const total = pricePerDay * diffDays;
+                    document.getElementById('rentalTotalCost').textContent = `Total: ₹${total} (${diffDays} Days)`;
+                    return { total, days: diffDays };
+                }
+            }
+            document.getElementById('rentalTotalCost').textContent = 'Total: ₹0';
+            return null;
+        }
+
+        function addBikeToCart() {
+            if (!isLoggedIn) {
+                alert("Please login");
+                return;
+            }
+
+            if (currentBikeId === null) return;
+
+            const bike = bikeDetails[currentBikeId];
+            const existingItem = cart.find(item => item.id === currentBikeId);
+            
+            // Handle Rental Logic
+            let rentalData = null;
+            if (bike.price.includes('/day')) {
+                const calc = calculateRentTotal();
+                if (!calc) {
+                    alert("Please select valid start and end dates.");
+                    return;
+                }
+                rentalData = {
+                    totalCost: calc.total,
+                    rentalPeriod: `${calc.days} Days`
+                };
+            }
+            
+            if (existingItem) {
+                existingItem.quantity += 1;
+                // Update rental cost if adding same item (simplified logic)
+                if(rentalData) existingItem.totalCost += rentalData.totalCost;
+            } else {
+                const cartItem = { id: currentBikeId, name: bike.name, price: bike.price, quantity: 1, ...rentalData };
+                cart.push(cartItem);
+            }
+
+            updateCartUI();
+            alert(`${bike.name} added to cart!`);
+            closeBikeDetails();
+        }
+
+        // Close bike details modal when clicking outside
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('bikeDetailsModal');
+            const modalContent = document.querySelector('.bike-details-modal');
+            if (event.target === modal) {
+                closeBikeDetails();
+            }
+            // Close other modals if clicked outside
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.remove('show');
+            }
+        });
+
+        // Sell Your Bike Tab Switching
+        function switchSellTab(tabName) {
+            // Hide all tabs
+            document.getElementById('rentalsTab').classList.remove('active');
+            document.getElementById('sellsTab').classList.remove('active');
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.sell-tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            if (tabName === 'rentals') {
+                document.getElementById('rentalsTab').classList.add('active');
+                document.querySelectorAll('.sell-tab-btn')[0].classList.add('active');
+            } else {
+                document.getElementById('sellsTab').classList.add('active');
+                document.querySelectorAll('.sell-tab-btn')[1].classList.add('active');
+            }
+        }
+
+        // Image preview for rental form
+        document.getElementById('rentalImage').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const preview = document.getElementById('rentalImagePreview');
+                    preview.innerHTML = `<img src="${event.target.result}" alt="Preview">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Image preview for sell form
+        document.getElementById('sellImage').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const preview = document.getElementById('sellImagePreview');
+                    preview.innerHTML = `<img src="${event.target.result}" alt="Preview">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Submit Rental Form
+        function submitBikeRental(event) {
+            event.preventDefault();
+            const adminDisplay = isAdmin ? 'flex' : 'none';
+            
+            const bikeName = document.getElementById('rentalBikeName').value;
+            const price = document.getElementById('rentalPrice').value;
+            const summary = document.getElementById('rentalSummary').value;
+            const imageInput = document.getElementById('rentalImage');
+            
+            if (!imageInput.files[0]) {
+                alert('Please select an image');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const imageData = event.target.result;
+                
+                // Add to bike details
+                const newId = Math.max(...Object.keys(bikeDetails).map(Number)) + 1;
+                bikeDetails[newId] = {
+                    name: bikeName,
+                    price: price,
+                    summary: summary,
+                    reviews: [
+                        { author: 'Rental User', rating: '★★★★★', text: 'Great bike for rental!' },
+                        { author: 'Happy Customer', rating: '★★★★★', text: 'Excellent condition and service!' }
+                    ]
+                };
+                
+                // Add to rentals carousel
+                const wrapper = document.querySelector('#rent .swipe-wrapper');
+                const newSlide = document.createElement('div');
+                newSlide.className = 'swipe-slide';
+                newSlide.innerHTML = `
+                    <img src="${imageData}" alt="${bikeName}" onclick="openBikeDetails(${newId})" class="clickable-bike-img">
+                    <h3>${bikeName}</h3>
+                    <p>${price}</p>
+                    <div class="stock-info">
+                        <p class="stock-label">Available:</p>
+                        <div class="stock-counter">
+                            <button class="stock-btn minus" onclick="decreaseStock(this)">−</button>
+                            <div class="stock-display">5</div>
+                            <button class="stock-btn plus" onclick="increaseStock(this)">+</button>
+                        </div>
+                    </div>
+                    <div class="admin-actions" style="display: ${adminDisplay}; margin-top: 10px; gap: 10px; justify-content: center;">
+                        <button onclick="editBike(this)" style="background: #ff9800; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Edit</button>
+                        <button onclick="deleteBike(this)" style="background: #f44336; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Remove</button>
+                    </div>
+                `;
+                wrapper.appendChild(newSlide);
+                
+                // Reset form
+                document.getElementById('rentalForm').reset();
+                document.getElementById('rentalImagePreview').innerHTML = '';
+                
+                alert(`${bikeName} added to Bike Rentals successfully!`);
+            };
+            reader.readAsDataURL(imageInput.files[0]);
+        }
+
+        // Submit Sell Form
+        function submitBikeSell(event) {
+            event.preventDefault();
+            const adminDisplay = isAdmin ? 'flex' : 'none';
+            
+            const bikeName = document.getElementById('sellBikeName').value;
+            const price = document.getElementById('sellPrice').value;
+            const summary = document.getElementById('sellSummary').value;
+            const imageInput = document.getElementById('sellImage');
+            
+            if (!imageInput.files[0]) {
+                alert('Please select an image');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const imageData = event.target.result;
+                
+                // Add to bike details
+                const newId = Math.max(...Object.keys(bikeDetails).map(Number)) + 1;
+                bikeDetails[newId] = {
+                    name: bikeName,
+                    price: price,
+                    summary: summary,
+                    reviews: [
+                        { author: 'Buyer', rating: '★★★★★', text: 'Excellent bike for sale!' },
+                        { author: 'Satisfied Customer', rating: '★★★★★', text: 'Great quality and value!' }
+                    ]
+                };
+                
+                // Add to sells carousel
+                const wrapper = document.querySelector('#BIKE_STOCKS .swipe-wrapper');
+                const newSlide = document.createElement('div');
+                newSlide.className = 'swipe-slide';
+                newSlide.innerHTML = `
+                    <img src="${imageData}" alt="${bikeName}" onclick="openBikeDetails(${newId})" class="clickable-bike-img">
+                    <h3>${bikeName}</h3>
+                    <p>${price}</p>
+                    <div class="stock-info">
+                        <p class="stock-label">Available:</p>
+                        <div class="stock-counter">
+                            <button class="stock-btn minus" onclick="decreaseStock(this)">−</button>
+                            <div class="stock-display">1</div>
+                            <button class="stock-btn plus" onclick="increaseStock(this)">+</button>
+                        </div>
+                    </div>
+                    <div class="admin-actions" style="display: ${adminDisplay}; margin-top: 10px; gap: 10px; justify-content: center;">
+                        <button onclick="editBike(this)" style="background: #ff9800; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Edit</button>
+                        <button onclick="deleteBike(this)" style="background: #f44336; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Remove</button>
+                    </div>
+                `;
+                wrapper.appendChild(newSlide);
+                
+                // Reset form
+                document.getElementById('sellForm').reset();
+                document.getElementById('sellImagePreview').innerHTML = '';
+                
+                alert(`${bikeName} added to Bikes For Sell successfully!`);
+            };
+            reader.readAsDataURL(imageInput.files[0]);
+        }
+
+        // Submit Customer Review
+        function submitCustomerReview(event) {
+            event.preventDefault();
+
+            const name = document.getElementById('reviewName').value;
+            const bike = document.getElementById('reviewBike').value;
+            const rating = document.getElementById('reviewRating').value;
+            const comment = document.getElementById('reviewComment').value;
+            const adminDisplay = isAdmin ? 'flex' : 'none';
+
+            const container = document.getElementById('reviewsScroller');
+            const newCard = document.createElement('div');
+            newCard.className = 'review-card';
+            newCard.style.color = '#333';
+            
+            newCard.innerHTML = `
+                <div class="review-header">
+                    <h4>${name}</h4>
+                    <span class="review-stars">${rating}</span>
+                </div>
+                <p class="review-bike-tag">Bike: ${bike}</p>
+                <p class="review-body">"${comment}"</p>
+                <div class="admin-actions" style="display: ${adminDisplay}; margin-top: 10px; gap: 10px;">
+                    <button onclick="editReview(this)" style="background: #ff9800; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Edit</button>
+                    <button onclick="deleteReview(this)" style="background: #f44336; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Remove</button>
+                </div>
+            `;
+
+            // Prepend to show at top
+            container.insertBefore(newCard, container.firstChild);
+
+            document.getElementById('reviewForm').reset();
+            alert('Thank you for your review!');
+        }
+
+        // Admin Review Functions
+        function deleteReview(btn) {
+            if (confirm("Are you sure you want to delete this review?")) {
+                btn.closest('.review-card').remove();
+            }
+        }
+
+        function editReview(btn) {
+            const card = btn.closest('.review-card');
+            const h4 = card.querySelector('.review-header h4');
+            const bodyP = card.querySelector('.review-body');
+            
+            const currentName = h4.textContent;
+            const currentComment = bodyP.textContent.replace(/^"|"$/g, '');
+            
+            const newName = prompt("Edit Name:", currentName);
+            if (newName === null) return;
+            const newComment = prompt("Edit Comment:", currentComment);
+            if (newComment === null) return;
+            
+            h4.textContent = newName;
+            bodyP.textContent = `"${newComment}"`;
+        }
+
+        // Admin Bike Functions
+        function deleteBike(btn) {
+            if (confirm("Are you sure you want to remove this bike?")) {
+                btn.closest('.swipe-slide').remove();
+            }
+        }
+
+        function editBike(btn) {
+            const slide = btn.closest('.swipe-slide');
+            const h3 = slide.querySelector('h3');
+            const p = slide.querySelector('p');
+            
+            const currentName = h3.textContent;
+            const currentPrice = p.textContent;
+            
+            const newName = prompt("Edit Bike Name:", currentName);
+            if (newName === null) return;
+            const newPrice = prompt("Edit Price:", currentPrice);
+            if (newPrice === null) return;
+            
+            h3.textContent = newName;
+            p.textContent = newPrice;
+        }
+
+        // Admin User Management Functions
+        function renderUserTable() {
+            const tbody = document.getElementById('userTableBody');
+            tbody.innerHTML = '';
+            
+            registeredUsers.forEach((user, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">${user.name || '-'}</td>
+                    <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">${user.email || '-'}</td>
+                    <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">${user.username}</td>
+                    <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">${user.password}</td>
+                    <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">
+                        <button onclick="editUser(${index})" style="background: #ff9800; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-right: 5px;">Edit</button>
+                        <button onclick="deleteUser(${index})" style="background: #f44336; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function deleteUser(index) {
+            if(confirm('Are you sure you want to delete this user?')) {
+                registeredUsers.splice(index, 1);
+                localStorage.setItem('bikeUsers', JSON.stringify(registeredUsers));
+                renderUserTable();
+            }
+        }
+
+        function editUser(index) {
+            const user = registeredUsers[index];
+            const newName = prompt("Edit Name:", user.name || "");
+            if (newName === null) return;
+            const newEmail = prompt("Edit Email:", user.email || "");
+            if (newEmail === null) return;
+            const newUsername = prompt("Edit Username:", user.username);
+            if (newUsername === null) return;
+            
+            if (newUsername !== user.username && registeredUsers.some(u => u.username === newUsername)) {
+                alert("❌ Username already exists!");
+                return;
+            }
+
+            const newPassword = prompt("Edit Password:", user.password);
+            if (newPassword === null) return;
+
+            registeredUsers[index] = { name: newName, email: newEmail, username: newUsername, password: newPassword };
+            localStorage.setItem('bikeUsers', JSON.stringify(registeredUsers));
+            renderUserTable();
+        }
+
+        // Initialize Admin Buttons for existing bikes
+        document.addEventListener('DOMContentLoaded', function() {
+            const bikeSlides = document.querySelectorAll('#rent .swipe-slide, #BIKE_STOCKS .swipe-slide');
+            bikeSlides.forEach(slide => {
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'admin-actions';
+                actionsDiv.style.cssText = 'display: none; margin-top: 10px; gap: 10px; justify-content: center;';
+                actionsDiv.innerHTML = `
+                    <button onclick="editBike(this)" style="background: #ff9800; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Edit</button>
+                    <button onclick="deleteBike(this)" style="background: #f44336; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Remove</button>
+                `;
+                slide.appendChild(actionsDiv);
+            });
+
+            // GSAP Parallax & Hover Effects
+            gsap.registerPlugin(ScrollTrigger);
+            
+            const bikeImages = document.querySelectorAll('.clickable-bike-img');
+            
+            bikeImages.forEach(img => {
+                // Parallax Effect: Moves image vertically as you scroll
+                gsap.fromTo(img, 
+                    { y: -20 }, 
+                    {
+                        y: 20,
+                        ease: "none",
+                        scrollTrigger: {
+                            trigger: img,
+                            start: "top bottom",
+                            end: "bottom top",
+                            scrub: 1
+                        }
+                    }
+                );
+
+                // Re-implement Hover Effect using GSAP to avoid CSS transform conflicts
+                img.addEventListener('mouseenter', () => {
+                    gsap.to(img, { scale: 1.05, duration: 0.3, ease: "power2.out" });
+                });
+                
+                img.addEventListener('mouseleave', () => {
+                    gsap.to(img, { scale: 1, duration: 0.3, ease: "power2.out" });
+                });
+            });
+
+            // Initialize Wishlist Icons
+            initWishlistIcons();
+
+        });
+    </script>
+
+</body>
+</html>
