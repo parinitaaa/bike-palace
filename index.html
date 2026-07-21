@@ -1275,6 +1275,27 @@ body.admin-mode .stock-btn.plus, body.admin-mode .stock-btn.minus { display: inl
 
             setTimeout(() => {
                 alert("✅ Payment Successful! Thank you for your order.");
+                
+                // Update stock numbers
+                cart.forEach(item => {
+                    const slides = document.querySelectorAll('.swipe-slide');
+                    slides.forEach(slide => {
+                        const img = slide.querySelector('.clickable-bike-img');
+                        if (img) {
+                            const onclickAttr = img.getAttribute('onclick');
+                            if (onclickAttr && onclickAttr.includes(`openBikeDetails(${item.id})`)) {
+                                const stockDisplay = slide.querySelector('.stock-display');
+                                if (stockDisplay) {
+                                    let currentStock = parseInt(stockDisplay.textContent);
+                                    let newStock = currentStock - item.quantity;
+                                    if (newStock < 0) newStock = 0;
+                                    stockDisplay.textContent = newStock;
+                                }
+                            }
+                        }
+                    });
+                });
+
                 cart = [];
                 updateCartUI();
                 updateButtonStates();
