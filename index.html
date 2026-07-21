@@ -1439,6 +1439,7 @@ body.admin-mode .stock-btn.plus, body.admin-mode .stock-btn.minus { display: inl
         };
 
         let currentBikeId = null;
+        let currentBikePrice = null;
 
         function openBikeDetails(bikeId) {
             currentBikeId = bikeId;
@@ -1446,14 +1447,35 @@ body.admin-mode .stock-btn.plus, body.admin-mode .stock-btn.minus { display: inl
             
             if (!bike) return;
 
-            document.getElementById('bikeDetailsImg').src = document.querySelector(`.swipe-slide:nth-child(${bikeId}) img`).src;
+            let displayPrice = bike.price;
+            let imgSrc = document.querySelector(`.swipe-slide:nth-child(${bikeId}) img`).src;
+            
+            if (window.event && window.event.target) {
+                const target = window.event.target;
+                if (target.tagName.toLowerCase() === 'img') {
+                    imgSrc = target.src;
+                    const pTag = target.parentElement.querySelector('p');
+                    if (pTag) {
+                        displayPrice = pTag.textContent;
+                    }
+                } else if (target.tagName.toLowerCase() === 'button' && target.classList.contains('add-to-cart-btn')) {
+                    const pTag = target.parentElement.querySelector('.search-result-price');
+                    if (pTag) {
+                        displayPrice = pTag.textContent;
+                    }
+                }
+            }
+            
+            currentBikePrice = displayPrice;
+
+            document.getElementById('bikeDetailsImg').src = imgSrc;
             document.getElementById('bikeDetailsName').textContent = bike.name;
-            document.getElementById('bikeDetailsPrice').textContent = bike.price;
+            document.getElementById('bikeDetailsPrice').textContent = currentBikePrice;
             document.getElementById('bikeDetailsSummary').textContent = bike.summary;
             
             // Setup Rental Inputs if it's a rental bike (contains "/day")
             const rentalSection = document.getElementById('rentalInputs');
-            if (bike.price.includes('/day')) {
+            if (currentBikePrice.includes('/day')) {
                 rentalSection.style.display = 'block';
                 
                 // Set min date to today
@@ -1500,7 +1522,7 @@ body.admin-mode .stock-btn.plus, body.admin-mode .stock-btn.minus { display: inl
 
                 if (diffDays > 0) {
                     // Extract number from price string (e.g., "₹2000/day" -> 2000)
-                    const pricePerDay = parseInt(bike.price.replace(/[^0-9]/g, ''));
+                    const pricePerDay = parseInt(currentBikePrice.replace(/[^0-9]/g, ''));
                     const total = pricePerDay * diffDays;
                     document.getElementById('rentalTotalCost').textContent = `Total: ₹${total} (${diffDays} Days)`;
                     return { total, days: diffDays };
@@ -1519,11 +1541,11 @@ body.admin-mode .stock-btn.plus, body.admin-mode .stock-btn.minus { display: inl
             if (currentBikeId === null) return;
 
             const bike = bikeDetails[currentBikeId];
-            const existingItem = cart.find(item => item.id === currentBikeId);
+            const existingItem = cart.find(item => item.id === currentBikeId && item.price === currentBikePrice);
             
             // Handle Rental Logic
             let rentalData = null;
-            if (bike.price.includes('/day')) {
+            if (currentBikePrice.includes('/day')) {
                 const calc = calculateRentTotal();
                 if (!calc) {
                     alert("Please select valid start and end dates.");
@@ -1540,11 +1562,12 @@ body.admin-mode .stock-btn.plus, body.admin-mode .stock-btn.minus { display: inl
                 // Update rental cost if adding same item (simplified logic)
                 if(rentalData) existingItem.totalCost += rentalData.totalCost;
             } else {
-                const cartItem = { id: currentBikeId, name: bike.name, price: bike.price, quantity: 1, ...rentalData };
+                const cartItem = { id: currentBikeId, name: bike.name, price: currentBikePrice, quantity: 1, ...rentalData };
                 cart.push(cartItem);
             }
 
             updateCartUI();
+            updateButtonStates();
             alert(`${bike.name} added to cart!`);
             closeBikeDetails();
         }
